@@ -1,6 +1,5 @@
 import {
   Component,
-  Inject,
   ElementRef,
   OnInit,
   ChangeDetectionStrategy
@@ -28,7 +27,7 @@ export class ChatWindowComponent implements OnInit {
 
   constructor(public messagesService: MessagesService,
               public threadsService: ThreadsService,
-              public UsersService: UsersService,
+              public usersService: UsersService,
               public el: ElementRef) {
   }
 
@@ -42,7 +41,7 @@ export class ChatWindowComponent implements OnInit {
         this.currentThread = thread;
       });
 
-    this.UsersService.currentUser
+    this.usersService.currentUser
       .subscribe(
         (user: User) => {
           this.currentUser = user;
@@ -67,8 +66,16 @@ export class ChatWindowComponent implements OnInit {
     m.author = this.currentUser;
     m.thread = this.currentThread;
     m.isRead = true;
-    this.messagesService.addMessage(m);
-    this.draftMessage = new Message();
+    m.sentAt = new Date();
+    if (m.text && m.text !== null) {
+      this.messagesService.addMessage(m);
+      this.draftMessage = new Message();
+    }
+  }
+
+  onDeleteMessages() {
+    this.messagesService.removeAllThreadMessages(this.currentThread);
+    // this.messagesService.removeAllMessages();
   }
 
   scrollToBottom(): void {

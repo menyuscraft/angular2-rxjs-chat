@@ -55,16 +55,16 @@ const initialMessages: Array<Message> = [
 export class ChatExampleData {
   static init(messagesService: MessagesService,
               threadsService: ThreadsService,
-              UsersService: UsersService): void {
+              usersService: UsersService): void {
 
     // TODO make `messages` hot
     messagesService.messages.subscribe(() => ({}));
 
     // set "Juliet" as the current user
-    UsersService.setCurrentUser(me);
+    usersService.setCurrentUser(me);
 
     // create the initial messages
-    initialMessages.map( (message: Message) => messagesService.addMessage(message) );
+    initialMessages.forEach( (message: Message) => messagesService.addMessage(message) );
 
     threadsService.setCurrentThread(tEcho);
 
@@ -93,7 +93,7 @@ export class ChatExampleData {
         messagesService.addMessage(
           new Message({
             author: rev,
-            text: message.text.split('').reverse().join(''),
+            text: message.text ? message.text.split('').reverse().join('') : '',
             thread: tRev
           })
         );

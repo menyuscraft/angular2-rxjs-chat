@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 import { User } from '../user/user.model';
 import { Thread } from '../thread/thread.model';
-import { Message } from '../message/message.model';
+import { Message } from './message.model';
+
+import * as _ from 'lodash';
 
 const initialMessages: Message[] = [];
 
@@ -26,15 +28,17 @@ export class MessagesService {
   // action streams
   create: Subject<Message> = new Subject<Message>();
   markThreadAsRead: Subject<any> = new Subject<any>();
+  remove: Subject<Message> = new Subject<Message>();
+  removeThreadMessages: Subject<any> = new Subject<any>();
 
   constructor() {
     this.messages = this.updates
-      // watch the updates and accumulate operations on the messages
+    // watch the updates and accumulate operations on the messages
       .scan((messages: Message[],
              operation: IMessagesOperation) => {
-               return operation(messages);
-             },
-            initialMessages)
+          return operation(messages);
+        },
+        initialMessages)
       // make sure we can share the most recent list of messages across anyone
       // who's interested in subscribing and cache the last known list of
       // messages
@@ -84,6 +88,26 @@ export class MessagesService {
       })
       .subscribe(this.updates);
 
+    // Remove all messages from particular thread
+    this.removeThreadMessages
+      .map( (thread: Thread) => {
+        return (messages: Message[]) => {
+          _.remove(messages, (el: Message) => {
+            return el.thread.id === thread.id;
+          });
+          return messages;
+        };
+      })
+      .subscribe(this.updates);
+
+    // Remove all messages from message stream
+    this.remove
+      .map( function(): IMessagesOperation {
+        return (messages: Message[]) => {
+          return messages = [];
+        };
+      })
+      .subscribe(this.updates);
   }
 
   // an imperative function call to this action stream
@@ -91,13 +115,21 @@ export class MessagesService {
     this.newMessages.next(message);
   }
 
+  removeAllMessages() {
+    this.remove.next();
+  }
+
+  removeAllThreadMessages(thread: Thread) {
+    this.removeThreadMessages.next(thread);
+  }
+
   messagesForThreadUser(thread: Thread, user: User): Observable<Message> {
     return this.newMessages
       .filter((message: Message) => {
-               // belongs to this thread
+        // belongs to this thread
         return (message.thread.id === thread.id) &&
-               // and isn't authored by this user
-               (message.author.id !== user.id);
+          // and isn't authored by this user
+          (message.author.id !== user.id);
       });
   }
 }
